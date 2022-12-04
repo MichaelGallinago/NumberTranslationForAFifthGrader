@@ -4,11 +4,6 @@ namespace Calculator
 {
     internal class Calc
     {
-        public static string GetBinarySum()
-        {
-
-        }
-
         public static string GetBinary(short number)
         {
             number = Math.Abs(number);
@@ -21,13 +16,13 @@ namespace Calculator
             return builder.ToString().PadLeft(8, '0');
         }
 
-        public static sbyte GetNumber(string binary)
+        public static byte GetNumber(string binary)
         {
-            sbyte number = 0;
+            byte number = 0;
             for (byte i = 0; i < binary.Length; i++)
             {
                 if (binary[binary.Length - i - 1] == '1')
-                    number += (sbyte)Math.Pow(2, i);
+                    number += (byte)Math.Pow(2, i);
             }
             return number;
         }

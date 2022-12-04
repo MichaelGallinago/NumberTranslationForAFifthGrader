@@ -118,7 +118,7 @@ namespace Calculator
                     Console.WriteLine();
                 }
 
-                Console.WriteLine($"Ответ: {extraCode}(2*) = {Calc.GetNumber(extraCode)}(10)");
+                Console.WriteLine($"Ответ: {extraCode}(2*) = {(sbyte)Calc.GetNumber(extraCode)}(10)");
                 Console.WriteLine("Нажмите ENTER, чтобы продолжить");
                 Console.ReadLine();
             }
@@ -166,7 +166,9 @@ namespace Calculator
                 string binary1 = Calc.GetBinary(number1);
                 string binary2 = Calc.GetBinary(number2);
                 string extraCode1 = Calc.GetExtraCode(number1);
-                string extraCode2 = Calc.GetExtraCode(number1);
+                string extraCode2 = Calc.GetExtraCode(number2);
+                string sum = Calc.GetBinary((short)(Calc.GetNumber(extraCode1) + Calc.GetNumber(extraCode2)));
+                string result = sum.Substring(sum.Length - 8);
 
                 Console.WriteLine("Переводим модули чисел в двоичную систему");
                 Console.WriteLine($"{number1}(10) = {binary1}(2)");
@@ -176,6 +178,13 @@ namespace Calculator
                 WriteProcessAddExtraCode(number1, binary1, extraCode1);
                 WriteProcessAddExtraCode(number2, binary2, extraCode2);
                 Console.WriteLine("Складываем полученные числа в двоичной системе");
+                Console.WriteLine($"  {extraCode1}");
+                Console.WriteLine($"+ {extraCode2}");
+                Console.WriteLine($"={sum.PadLeft(9)}");
+                Console.WriteLine("В ответ записываем только первые 8 цифр справа");
+                Console.WriteLine($"Ответ: {result}(2*) = {(sbyte)Calc.GetNumber(result)}(10)");
+                Console.WriteLine("Нажмите ENTER, чтобы продолжить");
+                Console.ReadLine();
             }
 
             Console.Clear();
