@@ -4,7 +4,20 @@ namespace Calculator
 {
     internal class Calc
     {
-        public static string GetBinary(short number)
+        public static int GetModulo(object value)
+        {
+            int number;
+            try
+            {
+                number = Convert.ToInt32(value);
+            }
+            catch (Exception)
+            {
+                number = 0;
+            }
+            return number < 0 ? -number : number;
+        }
+        public static string GetBinary(int number)
         {
             number = Math.Abs(number);
             StringBuilder builder = new StringBuilder();

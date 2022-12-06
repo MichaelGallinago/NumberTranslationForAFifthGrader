@@ -1,6 +1,4 @@
-﻿
-using System;
-using System.Text;
+﻿using System.Text;
 
 namespace Calculator
 {
@@ -11,6 +9,7 @@ namespace Calculator
 
         public static void Main()
         {
+            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             Console.OutputEncoding = Encoding.UTF8;
             while (true)
             {
@@ -95,7 +94,7 @@ namespace Calculator
                 string extraCode = Calc.GetExtraCode(number);
 
                 Console.WriteLine("Переводим модуль числа в двоичную систему");
-                Console.WriteLine($"{Math.Abs(number)}(10) = {binary}(2)");
+                Console.WriteLine($"{(number < 0 ? -number : number)}(10) = {binary}(2)");
                 Console.WriteLine();
                 Console.WriteLine("Если изначальное число отрицательное - инвертируем его");
                 Console.WriteLine("Это значит заменяем единицы на нули, а нули на единицы");
@@ -169,10 +168,15 @@ namespace Calculator
                 string extraCode2 = Calc.GetExtraCode(number2);
                 string sum = Calc.GetBinary((short)(Calc.GetNumber(extraCode1) + Calc.GetNumber(extraCode2)));
                 string result = sum.Substring(sum.Length - 8);
+                int absoluteNumber1 = Calc.GetModulo(number1);
+                int absoluteNumber2 = Calc.GetModulo(number2);
 
                 Console.WriteLine("Переводим модули чисел в двоичную систему");
-                Console.WriteLine($"{number1}(10) = {binary1}(2)");
-                Console.WriteLine($"{number2}(10) = {binary2}(2)");
+                GetDecimialBinaryDescription(absoluteNumber1);
+                Console.WriteLine($"{absoluteNumber1}(10) = {binary1}(2)");
+                Console.WriteLine();
+                GetDecimialBinaryDescription(absoluteNumber2);
+                Console.WriteLine($"{absoluteNumber2}(10) = {binary2}(2)");
                 Console.WriteLine();
                 Console.WriteLine("Получаем их дополнительный код");
                 WriteProcessAddExtraCode(number1, binary1, extraCode1);
@@ -215,10 +219,95 @@ namespace Calculator
                 ExceptionIndex = 0;
             }
 
-            string number = Console.ReadLine();
-            if (CheckForReturn(number)) return;
+            string input = Console.ReadLine();
+            if (CheckForReturn(input)) return;
+
+            input = input.Replace(',', '.');
+            if (!float.TryParse(input, out float number))
+            {
+                ExceptionIndex = 1;
+            }
+            else
+            {
+                Console.WriteLine("Переводим число в двоичную систему счисления: дробную и целую часть отдельно");
+                GetDecimialBinaryDescription(Calc.GetModulo(number));
+                string fractionalPart = GetFloatBinaryDescription(input).TrimEnd('0').PadRight(1, '0');
+                string integerPart = Calc.GetBinary(Calc.GetModulo(number)).TrimStart('0').PadLeft(1, '0');
+                Console.WriteLine("Записываем левый столбик сверху вниз");
+                Console.WriteLine();
+                Console.WriteLine("Записываем число:");
+                Console.WriteLine($"{integerPart}.{fractionalPart}");
+                Console.WriteLine();
+                Console.WriteLine("Записываем число в нормализованной экспоненциальной форме");
+                int power;
+                string binary;
+                if (integerPart == "0")
+                {
+                    binary = $"{fractionalPart.TrimStart('0').PadRight(2, '0').Insert(1, ".")}";
+                    power = -fractionalPart.IndexOf('1') - 1;
+                }
+                else
+                {
+                    binary = $"{integerPart.Insert(1, ".")}{fractionalPart}";
+                    power = integerPart.Length - 1;
+                }
+                Console.WriteLine($"{binary} * 2^({power})");
+                Console.WriteLine();
+                Console.WriteLine("Рассчитываем смещённый порядок числа");
+                Console.WriteLine($"127 + {power} = {127 + power}");
+                Console.WriteLine("Переводим в двоичную систему счисления");
+                GetDecimialBinaryDescription(127 + power);
+                string order = Calc.GetBinary(127 + power);
+                Console.WriteLine(order.TrimStart('0').PadLeft(1, '0'));
+                Console.WriteLine();
+                Console.WriteLine("Записываем знак, порядок и мантиссу");
+                string result = $"{(number < 0 ? "1" : "0")}|{order}|{binary.Substring(2, Math.Min(binary.Length - 2, 23))}";
+                Console.WriteLine($"Ответ: {result}");
+                Console.WriteLine("Нажмите ENTER, чтобы продолжить");
+                Console.ReadLine();
+            }
 
             Console.Clear();
+        }
+
+        private static void GetDecimialBinaryDescription(long number)
+        {
+            if (number == 0)
+            {
+                Console.WriteLine("0(10)=0(2)");
+            }
+            else
+            {
+                int length = number.ToString().Length;
+                while (number > 0L)
+                {
+                    Console.WriteLine($"{number.ToString().PadLeft(length)}|2|{number % 2L}");
+                    number /= 2L;
+                }
+                Console.WriteLine("Записываем правый столбик снизу вверх");
+            }
+            Console.WriteLine();
+        }
+
+        private static string GetFloatBinaryDescription(string value)
+        {
+            string fractionalPart = value.Substring(value.IndexOf('.') + 1);
+            int length = fractionalPart.Length;
+            long number = long.Parse(fractionalPart);
+            StringBuilder builder = new StringBuilder();
+            Console.WriteLine($"0|{number.ToString().PadLeft(length, '0')} /*2");
+            Console.WriteLine(new string('-', length + 2));
+            for (int i = 0; i < 24; i++)
+            {
+                number *= 2;
+                long integerPart = (long)(number / Math.Pow(10, length));
+                number -= (long)(integerPart * Math.Pow(10, length));
+                Console.WriteLine($"{integerPart}|{number.ToString().PadLeft(length, '0')} /*2");
+                builder.Append(integerPart.ToString());
+                if (number == 0)
+                    break;
+            }
+            return builder.ToString();
         }
 
         private static void ProcessFloatAdd()
@@ -242,10 +331,23 @@ namespace Calculator
                 ExceptionIndex = 0;
             }
 
-            string number1 = Console.ReadLine();
-            if (CheckForReturn(number1)) return;
-            string number2 = Console.ReadLine();
-            if (CheckForReturn(number2)) return;
+            string input1 = Console.ReadLine();
+            if (CheckForReturn(input1)) return;
+            string input2 = Console.ReadLine();
+            if (CheckForReturn(input2)) return;
+
+            if (!float.TryParse(input1, out float number1))
+            {
+                ExceptionIndex = 1;
+            }
+            else if (!float.TryParse(input2, out float number2))
+            {
+                ExceptionIndex = 2;
+            }
+            else
+            {
+
+            }
 
             Console.Clear();
         }
