@@ -392,7 +392,7 @@ namespace Calculator
                 char operationSign = signs.Item2;
                 float numberMax, numberMin;
                 string inputMax, inputMin;
-                if (number1 >= number2)
+                if (Math.Abs(number1) >= Math.Abs(number2))
                 {
                     numberMax = number1;
                     numberMin = number2;
