@@ -223,6 +223,15 @@ namespace Calculator
             if (CheckForReturn(input)) return;
 
             input = input.Replace(',', '.');
+            if (input.IndexOf('.') == -1)
+            {
+                input += ".0";
+            }
+            else if (input[0] == '.')
+            {
+                input = "0" + input;
+            }
+
             if (!float.TryParse(input, out float number))
             {
                 ExceptionIndex = 1;
@@ -231,7 +240,7 @@ namespace Calculator
             {
                 Console.WriteLine("Переводим число в двоичную систему счисления: дробную и целую часть отдельно");
                 GetDecimialBinaryDescription(Calc.GetModulo(number));
-                string fractionalPart = GetFloatBinaryDescription(input).TrimEnd('0').PadRight(1, '0');
+                string fractionalPart = GetFloatBinary(input, true).TrimEnd('0').PadRight(1, '0');
                 string integerPart = Calc.GetBinary(Calc.GetModulo(number)).TrimStart('0').PadLeft(1, '0');
                 Console.WriteLine("Записываем левый столбик сверху вниз");
                 Console.WriteLine();
@@ -261,8 +270,8 @@ namespace Calculator
                 Console.WriteLine(order.TrimStart('0').PadLeft(1, '0'));
                 Console.WriteLine();
                 Console.WriteLine("Записываем знак, порядок и мантиссу");
-                string result = $"{(number < 0 ? "1" : "0")}|{order}|{binary.Substring(2, Math.Min(binary.Length - 2, 23))}";
-                Console.WriteLine($"Ответ: {result}");
+                string result = $"{(number < 0 ? "1" : "0")}|{order}|{binary.Substring(2, Math.Min(binary.Length - 2, 23))}".PadRight(34, '0');
+                Console.WriteLine($"Ответ: {input} => {result}");
                 Console.WriteLine("Нажмите ENTER, чтобы продолжить");
                 Console.ReadLine();
             }
@@ -289,23 +298,35 @@ namespace Calculator
             Console.WriteLine();
         }
 
-        private static string GetFloatBinaryDescription(string value)
+        private static string GetFloatBinary(string value, bool writeDescription)
         {
             string fractionalPart = value.Substring(value.IndexOf('.') + 1);
             int length = fractionalPart.Length;
             long number = long.Parse(fractionalPart);
             StringBuilder builder = new StringBuilder();
-            Console.WriteLine($"0|{number.ToString().PadLeft(length, '0')} /*2");
-            Console.WriteLine(new string('-', length + 2));
-            for (int i = 0; i < 24; i++)
+
+            if (writeDescription)
+            {
+                Console.WriteLine($"0|{number.ToString().PadLeft(length, '0')} /*2");
+                Console.WriteLine(new string('-', length + 2));
+            }
+
+            for (int i = 0; i < 23; i++)
             {
                 number *= 2;
                 long integerPart = (long)(number / Math.Pow(10, length));
                 number -= (long)(integerPart * Math.Pow(10, length));
-                Console.WriteLine($"{integerPart}|{number.ToString().PadLeft(length, '0')} /*2");
                 builder.Append(integerPart.ToString());
+
+                if (writeDescription)
+                {
+                    Console.WriteLine($"{integerPart}|{number.ToString().PadLeft(length, '0')} /*2");
+                }
+
                 if (number == 0)
+                {
                     break;
+                }
             }
             return builder.ToString();
         }
@@ -336,6 +357,26 @@ namespace Calculator
             string input2 = Console.ReadLine();
             if (CheckForReturn(input2)) return;
 
+            input1 = input1.Replace(',', '.');
+            input2 = input2.Replace(',', '.');
+            if (input1.IndexOf('.') == -1)
+            {
+                input1 += ".0";
+            }
+            else if (input1[0] == '.')
+            {
+                input1 = "0" + input1;
+            }
+
+            if (input2.IndexOf('.') == -1)
+            {
+                input2 += ".0";
+            }
+            else if (input1[0] == '.')
+            {
+                input2 = "0" + input2;
+            }
+
             if (!float.TryParse(input1, out float number1))
             {
                 ExceptionIndex = 1;
@@ -346,10 +387,147 @@ namespace Calculator
             }
             else
             {
+                (char, char) signs = GetSigns(number1, number2);
+                char resultSign = signs.Item1;
+                char operationSign = signs.Item2;
+                float numberMax, numberMin;
+                string inputMax, inputMin;
+                if (number1 >= number2)
+                {
+                    numberMax = number1;
+                    numberMin = number2;
+                    inputMax = input1;
+                    inputMin = input2;
+                }
+                else
+                {
+                    numberMax = number2;
+                    numberMin = number1;
+                    inputMax = input2;
+                    inputMin = input1;
+                }
 
+                Console.WriteLine("Расположим первым наибольшее по модулю число");
+                string resultMax = ConvertFloats(numberMax, inputMax, true, out int powerMax);
+                string resultMin = ConvertFloats(numberMin, inputMin, true, out int powerMin);
+                string separator = new string('-', resultMax.Length);
+                Console.WriteLine(resultMax);
+                Console.WriteLine('+');
+                Console.WriteLine(resultMin);
+                Console.WriteLine(separator);
+                Console.WriteLine(separator);
+                resultMax = "0|" + resultMax.Substring(2);
+                resultMin = "0|" + resultMin.Substring(2);
+                Console.WriteLine($"{resultSign}({resultMax}");
+                Console.WriteLine(operationSign);
+                Console.WriteLine($"  {resultMin})");
+                Console.WriteLine(separator);
+                int offset = powerMax - powerMin;
+                if (offset > 0)
+                {
+                    resultMin = resultMin.Substring(11).Substring(0, Math.Max(0, 23 - offset));
+                    resultMin = $"{resultMax.Substring(0, 11)}{(offset > 1 ? new string('0', offset - 1) : "")}1{resultMin}".Substring(0,34);
+                    Console.WriteLine($"Сдвигаем мантиссу меньшего числа на {offset} разрядов вправо");
+                    Console.WriteLine(separator);
+                    Console.WriteLine($"{resultSign}({resultMax}");
+                    Console.WriteLine(operationSign);
+                    Console.WriteLine($"  {resultMin})");
+                    Console.WriteLine(separator);
+                }
+                float sum = GetFloatSum(input1, input2, out string stringSum);
+                Console.WriteLine($"Ответ: {sum} => {ConvertFloats(sum, stringSum, false, out _)}");
+                Console.WriteLine("Нажмите ENTER, чтобы продолжить");
+                Console.ReadLine();
             }
 
             Console.Clear();
+        }
+
+        private static float GetFloatSum(string input1, string input2, out string result)
+        {
+            int offset1 = input1.Length - input1.IndexOf('.') - 1;
+            int offset2 = input2.Length - input2.IndexOf('.') - 1;
+            long number1 = long.Parse(input1.Replace(".", ""));
+            long number2 = long.Parse(input2.Replace(".", ""));
+
+            if (offset1 >= offset2)
+                number2 *= (long)Math.Pow(10, offset1 - offset2);
+            else
+                number1 *= (long)Math.Pow(10, offset2 - offset1);
+
+            string sum = (number1 + number2).ToString();
+            result = sum.Insert(sum.Length - Math.Max(offset1, offset2), ".");
+
+            if (result[0] == '.')
+                result = "0" + result;
+
+            if (result[result.Length-1] == '.')
+                result = result + "0";
+
+            return float.Parse(result);
+        }
+
+        private static string ConvertFloats(float number, string input, bool writeDescription, out int power)
+        {
+            string fractionalPart = GetFloatBinary(input, false).TrimEnd('0').PadRight(1, '0');
+            string integerPart = Calc.GetBinary(Calc.GetModulo(number)).TrimStart('0').PadLeft(1, '0');
+            string binary;
+            if (integerPart == "0")
+            {
+                binary = $"{fractionalPart.TrimStart('0').PadRight(2, '0').Insert(1, ".")}";
+                power = -fractionalPart.IndexOf('1') - 1;
+            }
+            else
+            {
+                binary = $"{integerPart.Insert(1, ".")}{fractionalPart}";
+                power = integerPart.Length - 1;
+            }
+            string order = Calc.GetBinary(127 + power);
+            string result = $"{(number < 0 ? "1" : "0")}|{order}|{binary.Substring(2, Math.Min(binary.Length - 2, 23))}".PadRight(34, '0');
+            if (writeDescription)
+            {
+                Console.WriteLine($"{integerPart}.{fractionalPart}");
+                Console.WriteLine($"{binary} * 2^({power})");
+                Console.WriteLine($"127 + {power} = {127 + power}(10) = {order.TrimStart('0').PadLeft(1, '0')}(2)");
+                Console.WriteLine(result);
+                Console.WriteLine(new string('-', result.Length));
+            }
+            return result;
+        }
+
+        private static (char, char) GetSigns(float number1, float number2)
+        {
+            Console.WriteLine("Рассмотрим конечный знак");
+            char operationSign;
+            char resultSign;
+            if (number1 < 0 && number2 < 0)
+            {
+                resultSign = '-';
+                operationSign = '+';
+                Console.WriteLine("Оба числа меньше нуля - знак ответа '-'");
+                Console.WriteLine("Будем считать положительные числа и подставим его в конце");
+            }
+            else if (number1 >= 0 && number2 >= 0)
+            {
+                resultSign = '+';
+                operationSign = '+';
+                Console.WriteLine("Оба числа не отрицательные - знак ответа '+'");
+            }
+            else
+            {
+                operationSign = '-';
+                if (number1 >= 0)
+                {
+                    resultSign = number1 >= -number2 ? '+' : '-';
+                }
+                else
+                {
+                    resultSign = number2 >= -number1 ? '+' : '-';
+                }
+                Console.Write($"Вычитаем меньшее по модулю из большего по модулю - знак ответа: '{resultSign}'");
+            }
+
+            return (resultSign, operationSign);
         }
     }
 }
